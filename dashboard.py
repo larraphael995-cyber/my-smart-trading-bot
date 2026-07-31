@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-API_URL = "https://onrender.com"
+API_URL = "https://corsproxy.io?" + "https://onrender.com"
 
 st.set_page_config(page_title="Live Production Console", page_icon="💰")
 st.title("💰 AI Live Capital Management Console")
