@@ -1,3 +1,7 @@
-
+fastapi
+uvicorn
+pandas
+pandas-ta
+ccxt
 streamlit
 requests
