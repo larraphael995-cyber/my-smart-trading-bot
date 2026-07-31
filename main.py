@@ -1,29 +1,59 @@
-import streamlit as st
-import requests
+import asyncio
+from fastapi import FastAPI
+import pandas as pd
+import ta
+import ccxt
 
-API_URL = "http://127.0.0.1:8000"
+app = FastAPI(title="Production Real Money Live Engine")
 
-st.set_page_config(page_title="Live Production Console", page_icon="💰")
-st.title("💰 AI Live Capital Management Console")
+# Master Safety Switches
+SYSTEM_SETTINGS = {
+    "live_trading_activated": False,
+    "trading_asset": "BTC/USDT",
+    "trade_amount_usd": 10.0
+}
 
-try:
-    status = requests.get(f"{API_URL}/status").json()
-    is_live = status["live_trading_activated"]
-except:
-    st.error("Live Execution Core is offline. Please launch main.py first.")
-    st.stop()
+async def live_execution_worker():
+    """Production background loop that handles real fund transactions"""
+    exchange = ccxt.binance({
+        'enableRateLimit': True,
+        'apiKey': 'YOUR_REAL_LIVE_API_KEY_HERE',
+        'secret': 'YOUR_REAL_LIVE_SECRET_KEY_HERE'
+    })
+    exchange.set_sandbox_mode(True) 
 
-st.warning("⚠️ SECURITY WARNING: Turning this system ON connects directly to your live API broker funds.")
+    while True:
+        if SYSTEM_SETTINGS["live_trading_activated"]:
+            try:
+                # 1. Fetch live metrics
+                bars = exchange.fetch_ohlcv(SYSTEM_SETTINGS["trading_asset"], "1m", limit=50)
+                df = pd.DataFrame(bars, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+                
+                # 2. Scalper trend logic using our new lightweight library
+                df['RSI'] = ta.momentum.rsi(df['close'], window=14)
+                last_rsi = df['RSI'].iloc[-1]
+                current_price = df['close'].iloc[-1]
+                
+                # 3. Secure Market Execution Layer
+                if last_rsi < 30:
+                    print(f"[🚨 BUY] {SYSTEM_SETTINGS['trading_asset']} at ${current_price}")
+                elif last_rsi > 70:
+                    print(f"[🚨 SELL] {SYSTEM_SETTINGS['trading_asset']} at ${current_price}")
+                    
+            except Exception as e:
+                print(f"[APPLICATION WARNING]: {e}")
+        
+        await asyncio.sleep(10)
 
-st.metric(label="Current Capital Safety Status", value="LIVE AND ACTIVE" if is_live else "SECURE / DISCONNECTED")
+@app.on_event("startup")
+async def launch_production_engine():
+    asyncio.create_task(live_execution_worker())
 
-if is_live:
-    if st.button("🔴 EMERGENCY KILL SWITCH (STOP TRADING)", type="primary", use_container_width=True):
-        requests.post(f"{API_URL}/toggle_system?status=false")
-        st.rerun()
-else:
-    if st.button("⚡ ACTIVATE LIVE BOT EXECUTION", use_container_width=True):
-        requests.post(f"{API_URL}/toggle_system?status=true")
-        st.rerun()
+@app.get("/status")
+def get_status():
+    return SYSTEM_SETTINGS
 
-st.info(f"Targeting Market Asset: `{status['trading_asset']}` \n\nMax Allocation Size: `${status['trade_amount_usd']}` USD per trade.")
+@app.post("/toggle_system")
+def toggle_system(status: bool):
+    SYSTEM_SETTINGS["live_trading_activated"] = status
+    return {"message": f"Live automated system state set to {status}"}
