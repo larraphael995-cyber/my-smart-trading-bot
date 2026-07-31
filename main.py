@@ -1,10 +1,21 @@
 import asyncio
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import ta
 import ccxt
 
 app = FastAPI(title="Production Real Money Live Engine")
+
+# ─── CRITICAL CONNECTION BRIDGE ───
+# This section unlocks your server so your Streamlit app is allowed to connect safely
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Master Safety Switches
 SYSTEM_SETTINGS = {
@@ -29,7 +40,7 @@ async def live_execution_worker():
                 bars = exchange.fetch_ohlcv(SYSTEM_SETTINGS["trading_asset"], "1m", limit=50)
                 df = pd.DataFrame(bars, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
                 
-                # 2. Scalper trend logic using our new lightweight library
+                # 2. Scalper trend logic
                 df['RSI'] = ta.momentum.rsi(df['close'], window=14)
                 last_rsi = df['RSI'].iloc[-1]
                 current_price = df['close'].iloc[-1]
