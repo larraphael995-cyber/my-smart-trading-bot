@@ -19,11 +19,11 @@ st.metric(label="Current Capital Safety Status", value="LIVE AND ACTIVE" if is_l
 
 if is_live:
     if st.button("🔴 EMERGENCY KILL SWITCH (STOP TRADING)", type="primary", use_container_width=True):
-        requests.post(f"{API_URL}/toggle_system?status=false")
+        requests.post(API_URL.replace("/
         st.rerun()
 else:
     if st.button("⚡ ACTIVATE LIVE BOT EXECUTION", use_container_width=True):
         requests.post(f"{API_URL}/toggle_system?status=true")
-        st.rerun()
+        requests.post(API_URL.replace("/
 
 st.info(f"Targeting Market Asset: `{status['trading_asset']}` \n\nMax Allocation Size: `${status['trade_amount_usd']}` USD per trade.")
