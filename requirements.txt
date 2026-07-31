@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 pandas
-pandas-ta
+ta
 ccxt
 streamlit
 requests
